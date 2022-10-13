@@ -9,10 +9,8 @@ lemma finite_of_is_burnside {G : Type*} (h : is_burnside G) : finite G :=
 begin
   have h : nat.card G ≠ 0 := begin
     rcases h with ⟨p, q, a, b, hp, hq, hc⟩,
-    have hp' := pow_ne_zero a hp.ne_zero,
-    have hq' := pow_ne_zero b hq.ne_zero,
     rw hc,
-    exact mul_ne_zero hp' hq',
+    exact mul_ne_zero (pow_ne_zero _ hp.ne_zero) (pow_ne_zero _ hq.ne_zero),
   end,
   exact nat.finite_of_card_ne_zero h,
 end
