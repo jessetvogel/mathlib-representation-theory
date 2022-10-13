@@ -23,3 +23,5 @@ theorem solvable_of_burnside (h : is_burnside G) : is_solvable G :=
 begin
   sorry,
 end
+
+end
