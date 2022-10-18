@@ -70,23 +70,18 @@ open submodule
 
 instance jordan_holder_module {R M : Type*} [ring R] [add_comm_group M] [module R M] :
   jordan_holder_lattice (submodule R M) := {
-  is_maximal := λ A B, (A ≤ B) ∧
-    (∀ h : A ≤ B, is_simple_module R (coker $ of_le h)),
-  lt_of_is_maximal := λ A B h, begin
-    apply lt_of_le_of_ne h.1,
-    intro hAB,
-    cases nonzero_of_nontrivial (nontrivial_of_simple $ h.2 h.1) with x hx,
-    apply hx,
-    -- let z := quotient.exists_rep x,
-    sorry,
+  is_maximal := λ A B, (A < B) ∧ (∀ C, (C ≤ B ∧ A ≤ C) → (C = A ∨ C = B)),
+  lt_of_is_maximal := λ A B h, h.1,
+  sup_eq_of_is_maximal := λ {A B C} hAC hBC hAB, begin
+    -- have q₁ := hAC.2 (A ⊔ B),
+    -- have q₂ := hBC.2 (A ⊔ B),
+    sorry
   end,
-  sup_eq_of_is_maximal := sorry,
-  is_maximal_inf_left_of_is_maximal_sup := sorry,
-  iso := λ X Y, ∀ hX : X.1 ≤ X.2, ∀ hY : Y.1 ≤ Y.2,
-    nonempty $ (coker (of_le hX)) ≃ₗ[R] coker (of_le hY),
-  iso_symm := begin
-    sorry,
+  is_maximal_inf_left_of_is_maximal_sup := λ {A B} h₁ h₂, begin
+    sorry
   end,
+  iso := λ X Y, ∀ (hX : X.1 ≤ X.2) (hY : Y.1 ≤ Y.2), nonempty $ (coker (of_le hX)) ≃ₗ[R] coker (of_le hY),
+  iso_symm := sorry,
   iso_trans := sorry,
   second_iso := sorry
 }
