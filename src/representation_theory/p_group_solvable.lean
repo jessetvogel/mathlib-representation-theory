@@ -45,9 +45,7 @@ begin
       exact h₁,
       exfalso,
       exact h h₂,
-    }
-    -- have Z := is_p_group.center_nontrivial hG,
-    sorry,
+    },
   },
-  exact q (fintype.card G) rfl,
+  exact q (fintype.card G) le_rfl,
 end
