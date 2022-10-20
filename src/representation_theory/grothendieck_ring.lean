@@ -73,9 +73,22 @@ instance jordan_holder_module {R M : Type*} [ring R] [add_comm_group M] [module 
   is_maximal := λ A B, (A < B) ∧ (∀ C, (C ≤ B ∧ A ≤ C) → (C = A ∨ C = B)),
   lt_of_is_maximal := λ A B h, h.1,
   sup_eq_of_is_maximal := λ {A B C} hAC hBC hAB, begin
-    -- have q₁ := hAC.2 (A ⊔ B),
-    -- have q₂ := hBC.2 (A ⊔ B),
-    sorry
+    have H : A ⊔ B ≤ C := sup_le (le_of_lt hAC.1) (le_of_lt hBC.1),
+    have ha : A ≤ A ⊔ B := le_sup_left,
+    have ra : A ⊔ B = A ∨ A ⊔ B = C := hAC.2 (A ⊔ B) ⟨H , ha⟩,
+    cases ra with h1 h2,
+    {
+      have hb : B ≤ A ⊔ B := le_sup_right,
+      have rb : A ⊔ B = B ∨ A ⊔ B = C := hBC.2 (A ⊔ B) ⟨H , hb⟩,
+      cases rb with h3 h4,
+      {
+        have U : A = B := eq.trans (eq.symm h1) h3,
+        exfalso,
+        exact hAB U,
+      },
+      exact h4,
+    },
+    exact h2,
   end,
   is_maximal_inf_left_of_is_maximal_sup := λ {A B} h₁ h₂, begin
     sorry
