@@ -87,7 +87,13 @@ instance jordan_holder_module {R M : Type*} [ring R] [add_comm_group M] [module 
     sorry
   end,
   iso := λ X Y, ∀ (hX : X.1 ≤ X.2) (hY : Y.1 ≤ Y.2), nonempty $ (coker (of_le hX)) ≃ₗ[R] coker (of_le hY),
-  iso_symm := sorry,
+  iso_symm :=
+  begin
+    intros x y h hY hX,
+    cases h hX hY with f hf,
+    have finv := f.symm,
+    refine nonempty.intro finv,
+  end,
   iso_trans := sorry,
   second_iso := sorry
 }
