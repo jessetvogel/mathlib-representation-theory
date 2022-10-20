@@ -91,8 +91,7 @@ instance jordan_holder_module {R M : Type*} [ring R] [add_comm_group M] [module 
   begin
     intros x y h hY hX,
     cases h hX hY with f hf,
-    have finv := f.symm,
-    refine nonempty.intro finv,
+    refine nonempty.intro f.symm,
   end,
   iso_trans := sorry,
   second_iso := sorry
