@@ -52,14 +52,7 @@ begin
 end
 
 lemma nonzero_of_nontrivial {M : Type*} [add_comm_group M] (t : nontrivial M) : ∃ x : M, x ≠ 0 :=
-begin
-  have t' := t,
-  rcases t' with ⟨a, b, hab⟩,
-  use a-b,
-  intro h,
-  apply hab,
-  sorry,
-end
+  exists_ne 0
 
 end simple
 
