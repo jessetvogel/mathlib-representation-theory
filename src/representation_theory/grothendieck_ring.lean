@@ -157,14 +157,9 @@ instance jordan_holder_module : jordan_holder_lattice (submodule R M) := {
   is_maximal_inf_left_of_is_maximal_sup := λ {A B} h₁ h₂, begin
     sorry
   end,
-  iso := λ X Y, ∀ (hX : X.1 ≤ X.2) (hY : Y.1 ≤ Y.2), nonempty $ (coker (of_le hX)) ≃ₗ[R] coker (of_le hY),
-  iso_symm :=
-  begin
-    intros x y h hY hX,
-    cases h hX hY with f hf,
-    refine nonempty.intro f.symm,
-  end,
-  iso_trans := sorry,
+  iso := λ A B, ∃ (hA : A.1 ≤ A.2) (hB : B.1 ≤ B.2), nonempty (coker (of_le hA) ≃ₗ[R] coker (of_le hB)),
+  iso_symm := λ {A B} ⟨hA, hB, ⟨f⟩⟩, ⟨hB, hA, ⟨f.symm⟩⟩,
+  iso_trans := λ {A B C} ⟨hA, _, ⟨f⟩⟩ ⟨_, hC, ⟨g⟩⟩, ⟨hA, hC, ⟨f.trans g⟩⟩,
   second_iso := sorry
 }
 
