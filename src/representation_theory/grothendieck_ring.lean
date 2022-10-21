@@ -57,17 +57,13 @@ lemma nonzero_of_nontrivial {M : Type*} [add_comm_group M] (t : nontrivial M) : 
 end simple
 
 -- Jordan Holder
-section JordanHolder
-
-def wat {α : Type*} (s : set α) (x : α) (hx : x ∈ s) : s := subtype.mk x hx
+namespace JordanHolder
 
 open submodule
 
 variables {R M : Type*} [ring R] [add_comm_group M] [module R M]
 
-def is_maximal := λ A B : submodule R M, (A < B) ∧ (∀ C, C ≤ B → A ≤ C → (C = A ∨ C = B))
-
-lemma eq_of_im_top {A B : submodule R M} (hAB : A ≤ B) : A = B ↔ linear_map.range ( of_le hAB ) = ⊤ :=
+lemma eq_of_im_top {A B : submodule R M} (hAB : A ≤ B) : A = B ↔ im ( of_le hAB ) = ⊤ :=
 begin
   split; intro h, {
     change linear_map.range (of_le hAB) = (⊤ : submodule R B),
@@ -96,6 +92,8 @@ begin
   }
 end
 
+
+def is_maximal := λ A B : submodule R M, (A < B) ∧ (∀ C, C ≤ B → A ≤ C → (C = A ∨ C = B))
 lemma is_maximal_iff_quot_is_simple_module {A B : submodule R M} (hAB : A ≤ B) :
   is_maximal A B ↔ is_simple_module R (coker $ of_le hAB) :=
 begin
@@ -139,6 +137,7 @@ begin
       have eqAC := eq_of_le_of_not_lt leAC u,
       apply le_antisymm _ hAC,
       intros c hc,
+      sorry,
     },
   }
 end
