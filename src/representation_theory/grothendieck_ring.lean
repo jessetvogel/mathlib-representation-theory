@@ -17,7 +17,7 @@ section morphisms
 variables {R M N : Type*} [ring R] [add_comm_group M] [module R M] [add_comm_group N]
   [module R N] (f : M →ₗ[R] N)
 
-abbreviation im : submodule R N := submodule.map f ⊤
+abbreviation im : submodule R N := linear_map.range f
 abbreviation ker : submodule R M := submodule.comap f ⊥
 abbreviation coker := N ⧸ im f
 
@@ -59,29 +59,101 @@ end simple
 -- Jordan Holder
 section JordanHolder
 
+def wat {α : Type*} (s : set α) (x : α) (hx : x ∈ s) : s := subtype.mk x hx
+
 open submodule
 
-instance jordan_holder_module {R M : Type*} [ring R] [add_comm_group M] [module R M] :
-  jordan_holder_lattice (submodule R M) := {
-  is_maximal := λ A B, (A < B) ∧ (∀ C, (C ≤ B ∧ A ≤ C) → (C = A ∨ C = B)),
+variables {R M : Type*} [ring R] [add_comm_group M] [module R M]
+
+def is_maximal := λ A B : submodule R M, (A < B) ∧ (∀ C, C ≤ B → A ≤ C → (C = A ∨ C = B))
+
+lemma eq_of_im_top {A B : submodule R M} (hAB : A ≤ B) : A = B ↔ linear_map.range ( of_le hAB ) = ⊤ :=
+begin
+  split; intro h, {
+    change linear_map.range (of_le hAB) = (⊤ : submodule R B),
+    ext, split; intro h', trivial,
+    rw linear_map.mem_range,
+    use x, {
+      rw h,
+      exact set_like.coe_mem x,
+    },
+    ext,
+    simp only [coe_of_le, coe_mk, set_like.coe_eq_coe],
+  }, {
+    apply le_antisymm hAB,
+    intros b hb,
+    let b' := subtype.mk b hb,
+    have : b' ∈ (⊤ : submodule R B) := trivial,
+    rw ← h at this,
+    cases this with a ha,
+    suffices : coe a = b, {
+      rw ← this,
+      simp,
+    },
+    rw ← coe_of_le,
+    rw ha,
+    simp only [submodule.coe_mk],
+  }
+end
+
+lemma is_maximal_iff_quot_is_simple_module {A B : submodule R M} (hAB : A ≤ B) :
+  is_maximal A B ↔ is_simple_module R (coker $ of_le hAB) :=
+begin
+  rw is_simple_module_iff_is_coatom,
+  split; intro h, {
+    split, {
+      intro htop,
+      rw ← eq_of_im_top hAB at htop,
+      apply lt_irrefl B,
+      rw htop at h,
+      exact h.1,
+    }, {
+      intros C hC,
+      sorry,
+    },
+  }, {
+    split, {
+      apply lt_of_le_of_ne hAB,
+      intro hAB',
+      rw eq_of_im_top hAB at hAB',
+      exact h.1 hAB',
+    }, {
+      intros C hCB hAC,
+      have i := h.2,
+      have j := h.1,
+      by_cases u : im (of_le hAB) < im (of_le hCB), {
+        right,
+        rw eq_of_im_top hCB,
+        exact h.2 _ u,
+      },
+      left,
+      have leAC : im (of_le hAB) ≤ im (of_le hCB), {
+        intros b hb,
+        cases hb with a ha,
+        use a, {
+          apply hAC,
+          apply submodule.coe_mem,
+        },
+        exact ha,
+      },
+      have eqAC := eq_of_le_of_not_lt leAC u,
+      apply le_antisymm _ hAC,
+      intros c hc,
+    },
+  }
+end
+
+instance jordan_holder_module : jordan_holder_lattice (submodule R M) := {
+  is_maximal := is_maximal,
   lt_of_is_maximal := λ A B h, h.1,
   sup_eq_of_is_maximal := λ {A B C} hAC hBC hAB, begin
-    have H : A ⊔ B ≤ C := sup_le (le_of_lt hAC.1) (le_of_lt hBC.1),
-    have ha : A ≤ A ⊔ B := le_sup_left,
-    have ra : A ⊔ B = A ∨ A ⊔ B = C := hAC.2 (A ⊔ B) ⟨H , ha⟩,
-    cases ra with h1 h2,
-    {
-      have hb : B ≤ A ⊔ B := le_sup_right,
-      have rb : A ⊔ B = B ∨ A ⊔ B = C := hBC.2 (A ⊔ B) ⟨H , hb⟩,
-      cases rb with h3 h4,
-      {
-        have U : A = B := eq.trans (eq.symm h1) h3,
-        exfalso,
-        exact hAB U,
-      },
-      exact h4,
+    have hABC : A ⊔ B ≤ C := sup_le (le_of_lt hAC.1) (le_of_lt hBC.1),
+    cases hAC.2 _ hABC le_sup_left with hA h,
+    cases hBC.2 _ hABC le_sup_right with hB h, {
+      exfalso,
+      exact hAB (eq.trans hA.symm hB),
     },
-    exact h2,
+    all_goals {exact h},
   end,
   is_maximal_inf_left_of_is_maximal_sup := λ {A B} h₁ h₂, begin
     sorry
