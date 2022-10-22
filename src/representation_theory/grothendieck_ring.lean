@@ -249,21 +249,21 @@ instance jordan_holder_module : jordan_holder_lattice (submodule R M) := {
     -- rw this at f, :(
     sorry, -- mimic second_iso
   end,
-  iso := λ X Y, ∀ (hX : X.1 ≤ X.2) (hY : Y.1 ≤ Y.2), nonempty $ (coker (of_le hX)) ≃ₗ[R] coker (of_le hY),
+  iso := λ X Y, ∃ (hX : X.1 ≤ X.2) (hY : Y.1 ≤ Y.2), nonempty $ (coker (of_le hX)) ≃ₗ[R] coker (of_le hY),
   iso_symm := λ {A B} ⟨hA, hB, ⟨f⟩⟩, ⟨hB, hA, ⟨f.symm⟩⟩, -- this does not seem to compile for me. Lean 4?
   iso_trans := λ {A B C} ⟨hA, _, ⟨f⟩⟩ ⟨_, hC, ⟨g⟩⟩, ⟨hA, hC, ⟨f.trans g⟩⟩,
-  second_iso := λ A B h δ ε, ⟨begin
+  second_iso := λ {A B} h, ⟨le_sup_left, inf_le_right, ⟨begin
     -- dit moet beter kunnen
     -- motive is not type correct
-    have u : (↥B ⧸ comap B.subtype (A ⊓ B)) ≃ₗ[R] (of_le ε).coker, {
-      have i₂ : comap B.subtype (A ⊓ B : submodule R M) = (of_le ε).range, sorry, -- easy, but should be avoidable
+    have i₂ : comap B.subtype (A ⊓ B : submodule R M) = (of_le (inf_le_right : A ⊓ B ≤ B)).range, sorry, -- easy, but should be avoidable
+    have u : (↥B ⧸ comap B.subtype (A ⊓ B)) ≃ₗ[R] (of_le (inf_le_right : A ⊓ B ≤ B)).coker, {
       rw i₂,
     },
-    have v : ( (A ⊔ B : submodule R M) ⧸ comap (A ⊔ B).subtype A) ≃ₗ[R] (of_le δ).coker, sorry,
+    have v : ( (A ⊔ B : submodule R M) ⧸ comap (A ⊔ B).subtype A) ≃ₗ[R] (of_le (le_sup_left : A ≤ A ⊔ B)).coker, sorry,
     let f := linear_map.quotient_inf_equiv_sup_quotient B A,
     rw [sup_comm,inf_comm] at f,
     exact v.symm ≪≫ₗ f.symm ≪≫ₗ u,
-  end⟩,
+  end⟩⟩,
 }
 
 end JordanHolder
