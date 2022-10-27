@@ -53,19 +53,6 @@ end
 lemma nonzero_of_nontrivial {M : Type*} [add_comm_group M] (t : nontrivial M) : ∃ x : M, x ≠ 0 :=
   exists_ne 0
 
--- We probably don't need this
-def is_simple_module' (R M : Type*) [ring R] [add_comm_group M] [module R M] :=
-  (⊥ : submodule R M) ≠ ⊤ ∧ (∀ N : submodule R M, N = ⊥ ∨ N = ⊤ )
-lemma is_simple_module_eq {R M : Type*} [ring R] [add_comm_group M] [module R M] :
-  is_simple_module R M ↔ is_simple_module' R M :=
-begin
-  split; intro h, {
-    sorry,
-  }, {
-    sorry,
-  }
-end
-
 end simple
 
 -- Lattices
@@ -151,85 +138,57 @@ end
 open linear_map
 open submodule
 
-lemma map_subtype_inj {N : submodule R M} (A B : submodule R N) :
-  map N.subtype A = map N.subtype B ↔ A = B :=
+lemma comap_map_subtype (B : submodule R M) (A : submodule R B) :
+  comap B.subtype (map B.subtype A) = A :=
 begin
-  split; intro h, {
-    sorry, -- extensionality or library search
-  },
-  rwa h,
+  apply comap_map_eq_of_injective,
+  exact subtype.coe_injective,
 end
 
--- This should be compactified greatly
--- Eliminate coker?
 lemma is_maximal_iff_quot_is_simple {A B : submodule R M} (hAB : A ≤ B) :
-  lattice.is_maximal A B ↔ is_simple_module R (coker $ of_le hAB) :=
+  lattice.is_maximal A B ↔ is_simple_module R (B ⧸ comap B.subtype A) :=
 begin
   rw is_simple_module_iff_is_coatom,
   split; intro h, {
     split, {
       intro htop,
-      rw ← eq_of_range_top hAB at htop,
-      apply lt_irrefl B,
-      rw htop at h,
-      exact h.1,
+      rw submodule.comap_subtype_eq_top at htop,
+      rw le_antisymm hAB htop at h,
+      exact lt_irrefl B h.1,
     }, {
-      rw range_eq_map,
-      set A' := map (of_le hAB) ⊤ with dA',
-      rw ← dA',
-      intros C' A'_lt_C',
-      set A'' := map B.subtype A' with dA'',
-      set C := map B.subtype C' with dC,
-      have hA : A = A'', {
-        rw [dA'',dA'],
-        simp only [map_subtype_range_of_le, submodule.map_top],
+      intros C' hAC',
+      have hA : A = map B.subtype (comap B.subtype A),
+        rwa [map_comap_subtype,right_eq_inf],
+      have hAC : A ≤ map B.subtype C', {
+        rw hA,
+        exact map_mono (le_of_lt hAC'),
       },
-      have hAC : A ≤ C, {
-        rw [hA,dC,dA''],
-        exact map_mono (le_of_lt A'_lt_C'),
-      },
-      cases h.2 C (map_subtype_le B C') hAC with h h, {
+      cases h.2 (map B.subtype C') (map_subtype_le B C') hAC with h h, {
         exfalso,
-        apply ne_of_lt A'_lt_C',
-        rw ← map_subtype_inj,
-        rw [hA,dC,dA''] at h,
-        exact h.symm,
-      },
-      rw [← map_subtype_inj, ← dC, h, map_subtype_top],
+        apply ne_of_lt hAC',
+        rw congr_arg (comap B.subtype) h.symm,
+        exact comap_map_subtype B C',
+      }, {
+        rw [←comap_map_subtype B C', h, submodule.comap_subtype_self],
+      }
     },
   }, {
     split, {
       apply lt_of_le_of_ne hAB,
       intro hAB',
-      rw eq_of_range_top hAB at hAB',
-      exact h.1 hAB',
+      apply h.1,
+      rw hAB',
+      exact submodule.comap_subtype_self B,
     }, {
       intros C hCB hAC,
-      by_cases u : map (of_le hAB) ⊤ < map (of_le hCB) ⊤, {
+      by_cases u : comap B.subtype A < comap B.subtype C, {
         right,
-        rw ← range_eq_map at u,
-        rw eq_of_range_top hCB,
-        rw range_eq_map,
-        exact h.2 _ u,
-      },
-      left,
-      have leAC : map (of_le hAB) ⊤ ≤ map (of_le hCB) ⊤, {
-        intros b hb,
-        cases hb with a ha,
-        use a, {
-          apply hAC,
-          apply submodule.coe_mem,
-        },
-        exact ha,
-      },
-      have eqAC := eq_of_le_of_not_lt leAC u, -- A' = C'
-      have hA'': A = map B.subtype (map (of_le hAB) ⊤), {
-        simp only [submodule.map_subtype_range_of_le, submodule.map_top],
-      },
-      have hC'': C = map B.subtype (map (of_le hCB) ⊤), {
-        simp only [submodule.map_subtype_range_of_le, submodule.map_top],
-      },
-      rw [hA'',hC'',eqAC],
+        exact le_antisymm hCB (submodule.comap_subtype_eq_top.mp $ h.2 _ u),
+      }, {
+        left,
+        have eqAC := eq_of_le_of_not_lt (comap_mono hAC) u,
+        rw [right_eq_inf.mpr hAB, right_eq_inf.mpr hCB, ←map_comap_subtype, ←eqAC, map_comap_subtype],
+      }
     },
   }
 end
@@ -239,31 +198,17 @@ instance jordan_holder_module : jordan_holder_lattice (submodule R M) := {
   lt_of_is_maximal := λ x y, lattice.lt_of_is_maximal,
   sup_eq_of_is_maximal := λ x y z, lattice.sup_eq_of_is_maximal,
   is_maximal_inf_left_of_is_maximal_sup := λ {A B} h₁ h₂, begin
-    -- rw is_maximal_iff_quot_is_simple (@inf_le_left _ _ A _),
-    -- rw is_maximal_iff_quot_is_simple (@le_sup_left _ _ A _) at h₁,
-    -- rw is_maximal_iff_quot_is_simple (@le_sup_right _ _ _ B) at h₂,
-    let f := linear_map.quotient_inf_equiv_sup_quotient A B,
-    have : comap A.subtype (A ⊓ B) = (of_le (inf_le_left : A ⊓ B ≤ A)).range, sorry,
-    rw this at f,
-    have : (A ⧸ (of_le (inf_le_left : A ⊓ B ≤ A)).range) = (of_le (inf_le_left : A ⊓ B ≤ A)).coker, trivial,
-    -- rw this at f, :(
-    sorry, -- mimic second_iso
+    rw is_maximal_iff_quot_is_simple (inf_le_left : A ⊓ B ≤ A),
+    haveI h := (is_maximal_iff_quot_is_simple (le_sup_right : B ≤ A ⊔ B)).mp h₂,
+    apply is_simple_module.congr (linear_map.quotient_inf_equiv_sup_quotient A B),
   end,
-  iso := λ X Y, ∃ (hX : X.1 ≤ X.2) (hY : Y.1 ≤ Y.2), nonempty $ (coker (of_le hX)) ≃ₗ[R] coker (of_le hY),
-  iso_symm := λ {A B} ⟨hA, hB, ⟨f⟩⟩, ⟨hB, hA, ⟨f.symm⟩⟩, -- this does not seem to compile for me. Lean 4?
-  iso_trans := λ {A B C} ⟨hA, _, ⟨f⟩⟩ ⟨_, hC, ⟨g⟩⟩, ⟨hA, hC, ⟨f.trans g⟩⟩,
-  second_iso := λ {A B} h, ⟨le_sup_left, inf_le_right, ⟨begin
-    -- dit moet beter kunnen
-    -- motive is not type correct
-    have i₂ : comap B.subtype (A ⊓ B : submodule R M) = (of_le (inf_le_right : A ⊓ B ≤ B)).range, sorry, -- easy, but should be avoidable
-    have u : (↥B ⧸ comap B.subtype (A ⊓ B)) ≃ₗ[R] (of_le (inf_le_right : A ⊓ B ≤ B)).coker, {
-      rw i₂,
-    },
-    have v : ( (A ⊔ B : submodule R M) ⧸ comap (A ⊔ B).subtype A) ≃ₗ[R] (of_le (le_sup_left : A ≤ A ⊔ B)).coker, sorry,
-    let f := linear_map.quotient_inf_equiv_sup_quotient B A,
-    rw [sup_comm,inf_comm] at f,
-    exact v.symm ≪≫ₗ f.symm ≪≫ₗ u,
-  end⟩⟩,
+  iso := λ X Y, nonempty $ ((X.2 ⧸ comap X.2.subtype X.1)) ≃ₗ[R] ((Y.2 ⧸ comap Y.2.subtype Y.1)),
+  iso_symm := λ {A B} ⟨f⟩, ⟨f.symm⟩,
+  iso_trans := λ {A B C} ⟨f⟩ ⟨g⟩, ⟨f.trans g⟩,
+  second_iso := λ {A B} h, ⟨begin
+    rw [sup_comm,inf_comm],
+    exact (linear_map.quotient_inf_equiv_sup_quotient B A).symm,
+  end⟩,
 }
 
 end JordanHolder
@@ -283,6 +228,7 @@ end composition_series
 -- Grothendieck ring
 section grothendieck
 
+-- wrong definition! only correct for commutative rings...
 structure max_spec (R : Type*) [ring R] := (ideal : ideal R) (is_maximal : is_maximal ideal)
 def grothendieck_ring (R : Type*) [ring R] := (max_spec R) →₀ ℤ
 
