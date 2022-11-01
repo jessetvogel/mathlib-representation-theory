@@ -4,7 +4,8 @@ import tactic.basic
 
 theorem solvable_of_solvable_quotient_center
   {G : Type*} [group G] (h : is_solvable (G ⧸ subgroup.center G)) : is_solvable G := by {
-  sorry,
+  let Z := subgroup.center G,
+  exact solvable_of_ker_le_range (subgroup.subtype Z) (quotient_group.mk' Z) (by simp),
 }
 
 noncomputable instance {G : Type*} [group G] [finite G] (N : subgroup G) : fintype (G ⧸ N) := fintype.of_finite _
