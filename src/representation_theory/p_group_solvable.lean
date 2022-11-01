@@ -28,7 +28,10 @@ instance solvable_of_trivial (h : fintype.card G = 1) : is_solvable G :=
 variables (p : ℕ) [fact (nat.prime p)]
 
 lemma nat.le_of_le_succ_and_ne {n m : ℕ} (h₁ : n ≤ m + 1) (h₂ : n ≠ m + 1) : n ≤ m := by {
-  sorry,
+  cases h₁ with _ h,
+  exfalso,
+  exact h₂ rfl,
+  exact h,
 }
 
 theorem p_group_solvable (hG : is_p_group p G) : is_solvable G :=
