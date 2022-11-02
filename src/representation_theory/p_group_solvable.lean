@@ -11,8 +11,16 @@ theorem solvable_of_solvable_quotient_center
 noncomputable instance {G : Type*} [group G] [finite G] (N : subgroup G) : fintype (G ⧸ N) := fintype.of_finite _
 
 lemma card_quotient_lt
-  {G : Type*} [group G] [fintype G] (N : subgroup G) [nontrivial N] : fintype.card (G ⧸ N) < fintype.card G := by {
-  sorry,
+  {G : Type*} [group G] [fintype G] (N : subgroup G) [nt: nontrivial N]
+  [d: decidable_pred (λ (_x : G), _x ∈ N)] : fintype.card (G ⧸ N) < fintype.card G := by {
+  cases nt.exists_pair_ne with x hx,
+  -- subgroup.inclusion N x,
+  cases hx with y hy,
+  let x' := N.subtype x,
+  let y' := N.subtype y,
+  have hy' : x' ≠ y' := by sorry,
+  have r := fintype.card_quotient_lt hy',
+  have := has_equiv,
 }
 
 variables {G : Type*} [group G] [fintype G]
@@ -65,7 +73,21 @@ begin
       }, {
         -- Case n ≠ 0, then |K| > 1, so K is non-trivial.
         haveI K_nontrivial : nontrivial K := by {
-          sorry,
+          have l : n ≥ 1 := by {
+            have r : n ≥ 0 := zero_le n,
+            have l : n = 0 ∨ 0 < n := eq_zero_or_pos,
+            cases l,
+            exfalso,
+            exact n_zero l,
+            linarith,
+
+          },
+          have r : 1 < (fintype.card K) := by {
+            rw nat.succ_eq_add_one at card_K,
+            linarith,
+          },
+
+          apply fintype.one_lt_card_iff_nontrivial.1 r,
         },
         -- Then the center Z(K) is non-trivial
         haveI Z_nontrivial := is_p_group.center_nontrivial K_p_group,
