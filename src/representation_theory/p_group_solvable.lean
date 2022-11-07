@@ -1,117 +1,46 @@
-import group_theory.solvable
-import group_theory.p_group
-import tactic.basic
+import group_theory.solvable group_theory.p_group
 
-theorem solvable_of_solvable_quotient_center
-  {G : Type*} [group G] (h : is_solvable (G ⧸ subgroup.center G)) : is_solvable G := by {
-  let Z := subgroup.center G,
-  exact solvable_of_ker_le_range (subgroup.subtype Z) (quotient_group.mk' Z) (by simp),
-}
+open subgroup quotient_group fintype
 
-noncomputable instance {G : Type*} [group G] [finite G] (N : subgroup G) : fintype (G ⧸ N) := fintype.of_finite _
+universe u
+variables {G : Type u} [group G]
 
-lemma card_quotient_lt
-  {G : Type*} [group G] [fintype G] (N : subgroup G) [nt: nontrivial N]
-  [d: decidable_pred (λ (_x : G), _x ∈ N)] : fintype.card (G ⧸ N) < fintype.card G := by {
-  cases nt.exists_pair_ne with x hx,
-  -- subgroup.inclusion N x,
-  cases hx with y hy,
-  let x' := N.subtype x,
-  let y' := N.subtype y,
-  have hy' : x' ≠ y' := by sorry,
-  have r := fintype.card_quotient_lt hy',
-  have := has_equiv,
-}
+theorem solvable_of_solvable_quotient_center (h : is_solvable (G ⧸ center G)) : is_solvable G :=
+solvable_of_ker_le_range (subgroup.subtype $ center G) (quotient_group.mk' $ center G)
+  (by simp only [le_refl, ker_mk, subtype_range])
 
-variables {G : Type*} [group G] [fintype G]
+variables [fintype G]
 
-lemma top_eq_bot_of_trivial (h : fintype.card G = 1) : ⊥ = (⊤ : subgroup G) := by {
-  apply subgroup.eq_top_of_card_eq,
-  rw h,
-  exact subgroup.card_bot,
-}
+lemma card_lt_card_quotient_of_nontrivial (N : subgroup G) [nt: nontrivial N] [decidable_eq G]
+  [d: decidable_pred (λ x, x ∈ N)] : card (G ⧸ N) < card G := by
+{ rw card_eq_card_quotient_mul_card_subgroup N, exact lt_mul_right card_pos one_lt_card }
 
-instance solvable_of_trivial (h : fintype.card G = 1) : is_solvable G :=
-  is_solvable_of_top_eq_bot _ (eq.symm $ top_eq_bot_of_trivial h)
+lemma top_eq_bot_of_trivial (h : fintype.card G = 1) : ⊥ = (⊤ : subgroup G) := by
+{ apply eq_top_of_card_eq, rw h, exact card_bot }
 
-variables (p : ℕ) [fact (nat.prime p)]
+instance solvable_of_trivial (h : card G = 1) : is_solvable G :=
+is_solvable_of_top_eq_bot _ (eq.symm $ top_eq_bot_of_trivial h)
 
-lemma nat.le_of_le_succ_and_ne {n m : ℕ} (h₁ : n ≤ m + 1) (h₂ : n ≠ m + 1) : n ≤ m := by {
-  cases h₁ with _ h,
-  exfalso,
-  exact h₂ rfl,
-  exact h,
-}
-
-theorem p_group_solvable (hG : is_p_group p G) : is_solvable G :=
+theorem p_group_solvable [decidable_eq G] (p : ℕ) [fact (nat.prime p)] (hp : is_p_group p G) :
+  is_solvable G :=
 begin
-  -- Apply induction on n to the statement that all p-groups K with |K| ≤ n are solvable.
-  let q : ∀
-    (n : ℕ)
-    (K : Type*)
-    [K_group : group K]
-    [K_fin : fintype K]
-    [@is_p_group p K K_group]
-    (hK : @fintype.card K K_fin ≤ n), @is_solvable K K_group := by {
-    intro n;
-    induction n with n hn,
-    -- Base case: n = 0
-    introsI K K_group K_fin K_p_group hK,
-    exfalso,
-    have q' : fintype.card K ≠ 0 := fintype.card_ne_zero,
-    exact q' (nat.eq_zero_of_le_zero hK),
-    -- Induction step: n > 0
-    introsI K K_group K_fin K_p_group hK,
-    -- Distinguish cases |K| = n + 1 and |K| ≠ n + 1
-    by_cases card_K : (fintype.card K = n.succ), {
-      -- Case |K| = n + 1.
-      -- Distinguish cases n = 0 and n ≠ 0
-      by_cases n_zero : (n = 0), {
-        -- Case n = 0, then |K| = 1, so K is trivial, and hence solvable
-        rw [n_zero] at card_K,
-        exact solvable_of_trivial card_K,
-      }, {
-        -- Case n ≠ 0, then |K| > 1, so K is non-trivial.
-        haveI K_nontrivial : nontrivial K := by {
-          have l : n ≥ 1 := by {
-            have r : n ≥ 0 := zero_le n,
-            have l : n = 0 ∨ 0 < n := eq_zero_or_pos,
-            cases l,
-            exfalso,
-            exact n_zero l,
-            linarith,
-
-          },
-          have r : 1 < (fintype.card K) := by {
-            rw nat.succ_eq_add_one at card_K,
-            linarith,
-          },
-
-          apply fintype.one_lt_card_iff_nontrivial.1 r,
-        },
-        -- Then the center Z(K) is non-trivial
-        haveI Z_nontrivial := is_p_group.center_nontrivial K_p_group,
-        -- Construct the quotient K / Z(K)
-        let H := K ⧸ (subgroup.center K),
-        -- Then H is finite, and of cardinality smaller than G
-        have H_card_le_K_card : fintype.card H < fintype.card K := card_quotient_lt (subgroup.center K),
-        -- Hence, |K / Z(K)| ≤ n
-        have H_card_le_m_succ : fintype.card H ≤ n := by {
-          apply nat.le_of_lt_succ,
-          rw [← card_K],
-          exact H_card_le_K_card,
-        },
-        -- Also, any quotient of a p-group is a p-group
-        haveI H_p_group : is_p_group p H := is_p_group.to_quotient K_p_group _,
-        -- Thus, H is solvable
-        have H_solvable := @hn H _ _ H_p_group H_card_le_m_succ, -- TODO: fix this
-        exact solvable_of_solvable_quotient_center H_solvable,
-      }
-    }, {
-      -- Case |K| ≠ n + 1. Then |K| ≤ n, so we can use the induction hypothesis.
-      apply @hn K K_group K_fin K_p_group,
-      apply nat.le_of_le_succ_and_ne hK card_K,
-    }
-  },
-  exact @q (fintype.card G) G _ _ hG le_rfl,
+  have ind : ∀ n (K : Type u) [gK : group K] [fK : fintype K] [decidable_eq K]
+    (hp : @is_p_group p K gK) (hK : @card K fK ≤ n), @is_solvable K gK := λ n,
+  begin
+    induction n with n ind; introsI K _ _ _ hp hK',
+    exact false.rec _ (card_ne_zero (nat.eq_zero_of_le_zero hK')),
+    by_cases hK : (card K = n.succ), unfreezingI
+    { cases n,
+      exact solvable_of_trivial hK,
+      haveI : nontrivial K,
+      { rw [←one_lt_card_iff_nontrivial, hK], exact nat.one_lt_succ_succ _ },
+      haveI := is_p_group.center_nontrivial hp,
+      have hq : card (K ⧸ center K) ≤ n.succ,
+      { rw [←nat.succ_le_succ_iff, nat.succ_le_iff, ←hK],
+        exact card_lt_card_quotient_of_nontrivial (center K) },
+      have H_solvable := ind (K ⧸ center K) (is_p_group.to_quotient hp _) hq,
+      exact solvable_of_solvable_quotient_center H_solvable },
+    exact ind K hp (nat.le_of_lt_succ (lt_of_le_of_ne hK' hK)),
+  end,
+  exact ind (fintype.card G) G hp (le_refl _),
 end
